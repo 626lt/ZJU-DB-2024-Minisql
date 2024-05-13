@@ -99,7 +99,7 @@ class DiskManager {
   // with multiple buffer pool instances, need to protect file access
   std::recursive_mutex db_io_latch_;
   bool closed{false};
-  char meta_data_[PAGE_SIZE];
+  char meta_data_[PAGE_SIZE]; // 这个就是meta_data，只需要转换一下就行
 };
 
 #endif

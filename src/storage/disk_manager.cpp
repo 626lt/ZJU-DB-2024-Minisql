@@ -64,16 +64,21 @@ void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
 
 /**
  * TODO: Student Implement
+ * 访问对应的bitmappage，然后调用bitmap的函数
  */
 bool DiskManager::IsPageFree(page_id_t logical_page_id) {
-  return false;
+  //return false;
+  BitmapPage<PAGE_SIZE>* bitmap_page = new BitmapPage<PAGE_SIZE>();
+  page_id_t physical_page_id = 1 + logical_page_id / BITMAP_SIZE * (BITMAP_SIZE + 1);
+  ReadPhysicalPage(physical_page_id,reinterpret_cast<char*>(bitmap_page));
+  return bitmap_page->IsPageFree(logical_page_id % BITMAP_SIZE);
 }
 
 /**
  * TODO: Student Implement
  */
 page_id_t DiskManager::MapPageId(page_id_t logical_page_id) {
-  return 0;
+  return 1 + logical_page_id / BITMAP_SIZE * (BITMAP_SIZE + 1) + 1 + logical_page_id % BITMAP_SIZE;
 }
 
 int DiskManager::GetFileSize(const std::string &file_name) {
