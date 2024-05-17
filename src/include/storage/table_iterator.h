@@ -31,6 +31,7 @@ public:
   TableIterator operator++(int);
 
 private:
+  
   // add your own private member variables here
 };
 

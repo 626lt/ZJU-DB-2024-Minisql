@@ -9,7 +9,6 @@
 TableIterator::TableIterator(TableHeap *table_heap, RowId rid, Txn *txn) {}
 
 TableIterator::TableIterator(const TableIterator &other) {
-
 }
 
 TableIterator::~TableIterator() {
