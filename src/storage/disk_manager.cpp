@@ -89,7 +89,7 @@ page_id_t DiskManager::AllocatePage() {
  */
 void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
   //ASSERT(false, "Not implemented yet.");
-  u_int32_t extent_id = logical_page_id / BITMAP_SIZE;
+  uint32_t extent_id = logical_page_id / BITMAP_SIZE;
   page_id_t bitmap_page_id = 1 + extent_id * (BITMAP_SIZE + 1);
 
   DiskFileMetaPage* meta_page = reinterpret_cast<DiskFileMetaPage*>(meta_data_);

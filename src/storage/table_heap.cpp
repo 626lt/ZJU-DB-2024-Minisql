@@ -6,27 +6,27 @@
 bool TableHeap::InsertTuple(Row &row, Txn *txn) {
   uint32_t size = row.GetSerializedSize(schema_);
   if(size >= PAGE_SIZE) return false;
+  ASSERT(first_page_id_ != INVALID_PAGE_ID, "Invalid first page id.");
   auto page = reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(GetFirstPageId()));
   if(page == nullptr) return false;
-  while(true){
-    if(page->InsertTuple(row, schema_, txn, lock_manager_, log_manager_)){
-      buffer_pool_manager_->UnpinPage(page->GetTablePageId(), true);
-      return true;
-    }
+  while(!page->InsertTuple(row, schema_, txn, lock_manager_, log_manager_)){
     buffer_pool_manager_->UnpinPage(page->GetTablePageId(), false);
     page_id_t next_page_id = page->GetNextPageId();
     if(next_page_id != INVALID_PAGE_ID){
+      buffer_pool_manager_->UnpinPage(page->GetTablePageId(), false);
       page = reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(next_page_id));
     }else{
       auto new_page = reinterpret_cast<TablePage *>(buffer_pool_manager_->NewPage(next_page_id));
-      page->SetNextPageId(new_page->GetTablePageId());
+      if(new_page == nullptr) return false;
       new_page->Init(next_page_id, page->GetTablePageId(), log_manager_, txn);
-      new_page->InsertTuple(row, schema_, txn, lock_manager_, log_manager_);
+      new_page->SetNextPageId(INVALID_PAGE_ID);
+      page->SetNextPageId(next_page_id);
       buffer_pool_manager_->UnpinPage(page->GetTablePageId(), true);
-      buffer_pool_manager_->UnpinPage(new_page->GetTablePageId(), true);
-      return true;
+      page = new_page;
     }
   }
+  buffer_pool_manager_->UnpinPage(page->GetTablePageId(), true);
+  return true;
 }
 
 bool TableHeap::MarkDelete(const RowId &rid, Txn *txn) {
@@ -119,7 +119,7 @@ void TableHeap::DeleteTable(page_id_t page_id) {
 
 /**
  * TODO: Student Implement
- */
+//  */
 TableIterator TableHeap::Begin(Txn *txn) { return TableIterator(nullptr, RowId(), nullptr); }
 
 /**

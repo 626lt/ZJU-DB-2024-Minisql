@@ -224,69 +224,69 @@ void BPlusTree::ToGraph(BPlusTreePage *page, BufferPoolManager *bpm, std::ofstre
   if (page->IsLeafPage()) {
     auto *leaf = reinterpret_cast<LeafPage *>(page);
     // Print node name
-    out << leaf_prefix << leaf->GetPageId();
+    std::cout << leaf_prefix << leaf->GetPageId();
     // Print node properties
-    out << "[shape=plain color=green ";
+    std::cout << "[shape=plain color=green ";
     // Print data of the node
-    out << "label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"4\">\n";
+    std::cout << "label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"4\">\n";
     // Print data
-    out << "<TR><TD COLSPAN=\"" << leaf->GetSize() << "\">P=" << leaf->GetPageId()
+    std::cout << "<TR><TD COLSPAN=\"" << leaf->GetSize() << "\">P=" << leaf->GetPageId()
         << ",Parent=" << leaf->GetParentPageId() << "</TD></TR>\n";
-    out << "<TR><TD COLSPAN=\"" << leaf->GetSize() << "\">"
+    std::cout << "<TR><TD COLSPAN=\"" << leaf->GetSize() << "\">"
         << "max_size=" << leaf->GetMaxSize() << ",min_size=" << leaf->GetMinSize() << ",size=" << leaf->GetSize()
         << "</TD></TR>\n";
-    out << "<TR>";
+    std::cout << "<TR>";
     for (int i = 0; i < leaf->GetSize(); i++) {
       Row ans;
       processor_.DeserializeToKey(leaf->KeyAt(i), ans, schema);
-      out << "<TD>" << ans.GetField(0)->toString() << "</TD>\n";
+      std::cout << "<TD>" << ans.GetField(0)->toString() << "</TD>\n";
     }
-    out << "</TR>";
+    std::cout << "</TR>";
     // Print table end
-    out << "</TABLE>>];\n";
+    std::cout << "</TABLE>>];\n";
     // Print Leaf node link if there is a next page
     if (leaf->GetNextPageId() != INVALID_PAGE_ID) {
-      out << leaf_prefix << leaf->GetPageId() << " -> " << leaf_prefix << leaf->GetNextPageId() << ";\n";
-      out << "{rank=same " << leaf_prefix << leaf->GetPageId() << " " << leaf_prefix << leaf->GetNextPageId() << "};\n";
+      std::cout << leaf_prefix << leaf->GetPageId() << " -> " << leaf_prefix << leaf->GetNextPageId() << ";\n";
+      std::cout << "{rank=same " << leaf_prefix << leaf->GetPageId() << " " << leaf_prefix << leaf->GetNextPageId() << "};\n";
     }
 
     // Print parent links if there is a parent
     if (leaf->GetParentPageId() != INVALID_PAGE_ID) {
-      out << internal_prefix << leaf->GetParentPageId() << ":p" << leaf->GetPageId() << " -> " << leaf_prefix
+      std::cout << internal_prefix << leaf->GetParentPageId() << ":p" << leaf->GetPageId() << " -> " << leaf_prefix
           << leaf->GetPageId() << ";\n";
     }
   } else {
     auto *inner = reinterpret_cast<InternalPage *>(page);
     // Print node name
-    out << internal_prefix << inner->GetPageId();
+    std::cout << internal_prefix << inner->GetPageId();
     // Print node properties
-    out << "[shape=plain color=pink ";  // why not?
+    std::cout << "[shape=plain color=pink ";  // why not?
     // Print data of the node
-    out << "label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"4\">\n";
+    std::cout << "label=<<TABLE BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"4\">\n";
     // Print data
-    out << "<TR><TD COLSPAN=\"" << inner->GetSize() << "\">P=" << inner->GetPageId()
+    std::cout << "<TR><TD COLSPAN=\"" << inner->GetSize() << "\">P=" << inner->GetPageId()
         << ",Parent=" << inner->GetParentPageId() << "</TD></TR>\n";
-    out << "<TR><TD COLSPAN=\"" << inner->GetSize() << "\">"
+    std::cout << "<TR><TD COLSPAN=\"" << inner->GetSize() << "\">"
         << "max_size=" << inner->GetMaxSize() << ",min_size=" << inner->GetMinSize() << ",size=" << inner->GetSize()
         << "</TD></TR>\n";
-    out << "<TR>";
+    std::cout << "<TR>";
     for (int i = 0; i < inner->GetSize(); i++) {
-      out << "<TD PORT=\"p" << inner->ValueAt(i) << "\">";
+      std::cout << "<TD PORT=\"p" << inner->ValueAt(i) << "\">";
       if (i > 0) {
         Row ans;
         processor_.DeserializeToKey(inner->KeyAt(i), ans, schema);
-        out << ans.GetField(0)->toString();
+        std::cout << ans.GetField(0)->toString();
       } else {
-        out << " ";
+        std::cout << " ";
       }
-      out << "</TD>\n";
+      std::cout << "</TD>\n";
     }
-    out << "</TR>";
+    std::cout << "</TR>";
     // Print table end
-    out << "</TABLE>>];\n";
+    std::cout << "</TABLE>>];\n";
     // Print Parent link
     if (inner->GetParentPageId() != INVALID_PAGE_ID) {
-      out << internal_prefix << inner->GetParentPageId() << ":p" << inner->GetPageId() << " -> " << internal_prefix
+      std::cout << internal_prefix << inner->GetParentPageId() << ":p" << inner->GetPageId() << " -> " << internal_prefix
           << inner->GetPageId() << ";\n";
     }
     // Print leaves
@@ -296,7 +296,7 @@ void BPlusTree::ToGraph(BPlusTreePage *page, BufferPoolManager *bpm, std::ofstre
       if (i > 0) {
         auto sibling_page = reinterpret_cast<BPlusTreePage *>(bpm->FetchPage(inner->ValueAt(i - 1))->GetData());
         if (!sibling_page->IsLeafPage() && !child_page->IsLeafPage()) {
-          out << "{rank=same " << internal_prefix << sibling_page->GetPageId() << " " << internal_prefix
+          std::cout << "{rank=same " << internal_prefix << sibling_page->GetPageId() << " " << internal_prefix
               << child_page->GetPageId() << "};\n";
         }
         bpm->UnpinPage(sibling_page->GetPageId(), false);

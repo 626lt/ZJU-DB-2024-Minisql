@@ -16,7 +16,7 @@ uint32_t Row::SerializeTo(char *buf, Schema *schema) const {
   uint32_t null_size = (fields_num + 7) / 8;
   char *null_bitmap = new char[null_size];
   memset(null_bitmap, 0, null_size);
-  for (uint32_t i = 0; i < fields_num; i++) {
+  for (int i = 0; i < fields_num; i++) {
     if (fields_[i]->IsNull()) {
       null_bitmap[i / 8] |= (1 << (i % 8));
     }
@@ -25,11 +25,13 @@ uint32_t Row::SerializeTo(char *buf, Schema *schema) const {
   offset += null_size;
   delete[] null_bitmap;
   // write Fields
-  for (uint32_t i = 0; i < fields_num; i++) {
+  for (int i = 0; i < fields_num; i++) {
     if (!fields_[i]->IsNull()) {
       offset += fields_[i]->SerializeTo(buf + offset);
     }
   }
+  uint32_t size = GetSerializedSize(schema);
+  ASSERT(size == offset, "Serialized size do not match.");
   return offset; 
 }
 
@@ -73,8 +75,9 @@ uint32_t Row::GetSerializedSize(Schema *schema) const {
   // replace with your code here
   uint32_t size = 0;
   size += sizeof(uint32_t); // Field Nums
-  size += (GetFieldCount() + 7) / 8; // Null bitmaps
-  for (uint32_t i = 0; i < GetFieldCount(); i++) {
+  uint32_t cnt = GetFieldCount();
+  size += (cnt + 7) / 8; // Null bitmaps
+  for (int i = 0; i < cnt; i++) {
     if (!fields_[i]->IsNull()) {
       size += fields_[i]->GetSerializedSize();
     }
