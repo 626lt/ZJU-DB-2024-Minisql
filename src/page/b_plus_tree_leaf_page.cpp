@@ -23,6 +23,8 @@
  */
 void LeafPage::Init(page_id_t page_id, page_id_t parent_id, int key_size, int max_size) {
   SetPageType(IndexPageType::LEAF_PAGE);
+  SetKeySize(key_size);
+  SetLSN(INVALID_LSN);
   SetSize(0);
   SetPageId(page_id);
   SetParentPageId(parent_id);
@@ -57,12 +59,12 @@ int LeafPage::KeyIndex(const GenericKey *key, const KeyManager &KM) {
   while (left <= right)
   {
     int mid = (left + right) / 2;
-    if (KM.CompareKeys(KeyAt(mid), key) <= 0)
-      left = mid + 1;
-    else
+    if (KM.CompareKeys(KeyAt(mid), key) >= 0)
       right = mid - 1;
+    else
+      left = mid + 1;
   }
-  return right;
+  return left;
 }
 
 /*
@@ -107,13 +109,8 @@ std::pair<GenericKey *, RowId> LeafPage::GetItem(int index) { return {KeyAt(inde
  */
 int LeafPage::Insert(GenericKey *key, const RowId &value, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
-  if (index == -1)
-  {
-    index = 0;
-  }
-  else
-  {
-    index++;
+  if (index < GetSize() && KM.CompareKeys(KeyAt(index), key) == 0) {
+    return GetSize();
   }
   int size = GetSize();
   for (int i = size; i > index; i--)
@@ -137,7 +134,6 @@ void LeafPage::MoveHalfTo(LeafPage *recipient) {
   int half = size / 2;
   recipient->CopyNFrom(pairs_off + half * pair_size, size - half);
   IncreaseSize(-size + half);
-  recipient->IncreaseSize(size - half);
 }
 
 /*
@@ -158,7 +154,7 @@ void LeafPage::CopyNFrom(void *src, int size) {
  */
 bool LeafPage::Lookup(const GenericKey *key, RowId &value, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
-  if (index != -1 && KM.CompareKeys(KeyAt(index), key) == 0)
+  if (index < GetSize() && KM.CompareKeys(KeyAt(index), key) == 0)
   {
     value = ValueAt(index);
     return true;
@@ -177,7 +173,7 @@ bool LeafPage::Lookup(const GenericKey *key, RowId &value, const KeyManager &KM)
  */
 int LeafPage::RemoveAndDeleteRecord(const GenericKey *key, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
-  if (index != -1 && KM.CompareKeys(KeyAt(index), key) == 0)
+  if (index < GetSize() && KM.CompareKeys(KeyAt(index), key) == 0)
   {
     int size = GetSize();
     for (int i = index; i < size - 1; i++)

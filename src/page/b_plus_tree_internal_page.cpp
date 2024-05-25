@@ -23,8 +23,9 @@ void InternalPage::Init(page_id_t page_id, page_id_t parent_id, int key_size, in
   SetSize(0);
   SetPageId(page_id);
   SetParentPageId(parent_id);
-  SetMaxSize(max_size);
   SetKeySize(key_size);
+  SetMaxSize(max_size);
+  SetLSN(INVALID_LSN);
 }
 /*
  * Helper method to get/set the key associated with input "index"(a.k.a
@@ -130,6 +131,7 @@ void InternalPage::MoveHalfTo(InternalPage *recipient, BufferPoolManager *buffer
   int size = GetSize();
   int left_size = size / 2, right_size = size - left_size;
   recipient->CopyNFrom(pairs_off + left_size * pair_size, right_size, buffer_pool_manager);
+  IncreaseSize(-right_size);
 }
 
 /* Copy entries into me, starting from {items} and copy {size} entries.

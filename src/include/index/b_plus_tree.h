@@ -60,11 +60,11 @@ class BPlusTree {
     if (IsEmpty()) {
       return;
     }
-    out << "digraph G {" << std::endl;
+    std::cout << "digraph G {" << std::endl;
     Page *root_page = buffer_pool_manager_->FetchPage(root_page_id_);
     auto *node = reinterpret_cast<BPlusTreePage *>(root_page->GetData());
     ToGraph(node, buffer_pool_manager_, out, schema);
-    out << "}" << std::endl;
+    std::cout << "}" << std::endl;
   }
 
  private:
