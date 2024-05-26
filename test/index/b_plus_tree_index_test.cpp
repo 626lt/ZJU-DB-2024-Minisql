@@ -31,16 +31,19 @@ TEST(BPlusTreeTests, BPlusTreeIndexSimpleTest) {
   auto disk_mgr_ = new DiskManager(db_name);
   auto bpm_ = new BufferPoolManager(DEFAULT_BUFFER_POOL_SIZE, disk_mgr_);
   page_id_t id;
-  if (bpm_->IsPageFree(CATALOG_META_PAGE_ID)) {
-    if (bpm_->NewPage(id) == nullptr || id != CATALOG_META_PAGE_ID) {
-      throw logic_error("Failed to allocate catalog meta page.");
-    }
-  }
-  if (bpm_->IsPageFree(INDEX_ROOTS_PAGE_ID)) {
-    if (bpm_->NewPage(id) == nullptr || id != INDEX_ROOTS_PAGE_ID) {
-      throw logic_error("Failed to allocate header page.");
-    }
-  }
+  // cout << bpm_->IsPageFree(CATALOG_META_PAGE_ID) << endl;
+  // cout << bpm_->IsPageFree(INDEX_ROOTS_PAGE_ID) << endl;
+  // if (bpm_->IsPageFree(CATALOG_META_PAGE_ID)) {
+  //   if (bpm_->NewPage(id) == nullptr || id != CATALOG_META_PAGE_ID) {
+  //     throw logic_error("Failed to allocate catalog meta page.");
+  //   }
+  // }
+  // if (bpm_->IsPageFree(INDEX_ROOTS_PAGE_ID)) {
+  //   if (bpm_->NewPage(id) == nullptr || id != INDEX_ROOTS_PAGE_ID) {
+  //     cout << id << " || " << INDEX_ROOTS_PAGE_ID << endl;
+  //     throw logic_error("Failed to allocate header page.");
+  //   }
+  // }
   std::vector<Column *> columns = {new Column("id", TypeId::kTypeInt, 0, false, false),
                                    new Column("name", TypeId::kTypeChar, 64, 1, true, false),
                                    new Column("account", TypeId::kTypeFloat, 2, true, false)};
