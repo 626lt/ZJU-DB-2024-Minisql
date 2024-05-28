@@ -1,6 +1,10 @@
 #include "buffer/lru_replacer.h"
 
-LRUReplacer::LRUReplacer(size_t num_pages){}
+LRUReplacer::LRUReplacer(size_t num_pages){
+  capacity = num_pages;
+  lru_list_.clear();
+  lru_list_map_.clear();
+}
 
 LRUReplacer::~LRUReplacer() = default;
 
