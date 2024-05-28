@@ -114,9 +114,17 @@ void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
 bool DiskManager::IsPageFree(page_id_t logical_page_id) {
   //return false;
   BitmapPage<PAGE_SIZE>* bitmap_page = new BitmapPage<PAGE_SIZE>();
-  page_id_t physical_page_id = 1 + logical_page_id / BITMAP_SIZE * (BITMAP_SIZE + 1); // bitmap page id
-  ReadPhysicalPage(physical_page_id,reinterpret_cast<char*>(bitmap_page));
-  return bitmap_page->IsPageFree(logical_page_id % BITMAP_SIZE);
+  uint32_t extent_id = logical_page_id / BITMAP_SIZE;
+  uint32_t page_offset = logical_page_id % BITMAP_SIZE;
+  page_id_t bitmap_page_id = 1 + extent_id * (BITMAP_SIZE + 1);
+  ReadPhysicalPage(bitmap_page_id,reinterpret_cast<char*>(bitmap_page));
+  if (extent_id >= reinterpret_cast<DiskFileMetaPage*>(meta_data_)->num_extents_)
+  {
+    return true;
+  }
+  bool is_free = bitmap_page->IsPageFree(page_offset);
+  delete bitmap_page;
+  return is_free;
 }
 
 /**
