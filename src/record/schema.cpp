@@ -40,7 +40,9 @@ uint32_t Schema::DeserializeFrom(char *buf, Schema *&schema) {
   offset += sizeof(column_size);
   std::vector<Column *> columns;
   for (uint32_t i = 0; i < column_size; i++) {
-    offset += Column::DeserializeFrom(buf + offset, columns[i]);
+    Column *temp = nullptr;
+    offset += Column::DeserializeFrom(buf + offset, temp);
+    columns.emplace_back(temp);
   }
   schema = new Schema(columns, true);
   return offset;

@@ -28,7 +28,7 @@ uint32_t TableMetadata::SerializeTo(char *buf) const {
  * TODO: Student Implement
  */
 uint32_t TableMetadata::GetSerializedSize() const {
-  return 4 + 4 + MACH_STR_SERIALIZED_SIZE(table_name_) + 4 + schema_->GetSerializedSize();
+  return sizeof(uint32_t) + sizeof(table_id_t) + sizeof(uint32_t) + table_name_.length() + sizeof(page_id_t) + schema_->GetSerializedSize();
 }
 
 /**
@@ -44,21 +44,21 @@ uint32_t TableMetadata::DeserializeFrom(char *buf, TableMetadata *&table_meta) {
   uint32_t magic_num = MACH_READ_UINT32(buf);
   buf += 4;
   ASSERT(magic_num == TABLE_METADATA_MAGIC_NUM, "Failed to deserialize table info.");
-  // table id
+  // // table id
   table_id_t table_id = MACH_READ_FROM(table_id_t, buf);
   buf += 4;
-  // table name
+  // // table name
   uint32_t len = MACH_READ_UINT32(buf);
   buf += 4;
   std::string table_name(buf, len);
   buf += len;
-  // table heap root page id
+  // // table heap root page id
   page_id_t root_page_id = MACH_READ_FROM(page_id_t, buf);
   buf += 4;
-  // table schema
+  // // table schema
   TableSchema *schema = nullptr;
   buf += TableSchema::DeserializeFrom(buf, schema);
-  // allocate space for table metadata
+  // // allocate space for table metadata
   table_meta = new TableMetadata(table_id, table_name, root_page_id, schema);
   return buf - p;
 }
