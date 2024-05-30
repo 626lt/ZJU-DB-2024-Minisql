@@ -36,7 +36,8 @@ const Row &TableIterator::operator*() {
   auto page = reinterpret_cast<TablePage *>(table_heap_->buffer_pool_manager_->FetchPage(rid_.GetPageId()));
   if (page == nullptr) {
     table_heap_->buffer_pool_manager_->UnpinPage(rid_.GetPageId(), false);
-    return Row();
+    Row *row = new Row(INVALID_ROWID);
+    return *row;
   }
   Row *row = new Row(rid_);
   bool res = page->GetTuple(row, table_heap_->schema_, txn_, table_heap_->lock_manager_);
@@ -45,7 +46,8 @@ const Row &TableIterator::operator*() {
     return *row;
   }else{
     table_heap_->buffer_pool_manager_->UnpinPage(page->GetPageId(), false);
-    return Row();
+    Row *row = new Row(INVALID_ROWID);
+    return *row;
   }
 }
 
