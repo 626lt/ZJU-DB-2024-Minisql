@@ -25,7 +25,11 @@ public:
     /**
     * TODO: Student Implement
     */
-    void Init(CheckPoint &last_checkpoint) {}
+    void Init(CheckPoint &last_checkpoint) {
+        persist_lsn_ = last_checkpoint.checkpoint_lsn_;
+        active_txns_ = last_checkpoint.active_txns_;
+        data_ = last_checkpoint.persist_data_;
+    }
 
     /**
     * TODO: Student Implement

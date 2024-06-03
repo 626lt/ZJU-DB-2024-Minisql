@@ -7,3 +7,5 @@ datas/
 cmake-build-debug/
 cmake-build-release/
 minisql报告/
+*.txt
+sql_gen/

@@ -465,16 +465,17 @@ IndexIterator BPlusTree::Begin(const GenericKey *key) {
  * @return : index iterator
  */
 IndexIterator BPlusTree::End() {
-  page_id_t page_id = root_page_id_;
-  Page *page = buffer_pool_manager_->FetchPage(page_id);
-  BPlusTreePage *node = reinterpret_cast<BPlusTreePage *>(page->GetData());
-  while(!node->IsLeafPage()) {
-    InternalPage *internal_node = reinterpret_cast<InternalPage *>(node);
-    page_id = internal_node->ValueAt(internal_node->GetSize() - 1);
-    buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
-    node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
-  }
-  return IndexIterator(page_id, buffer_pool_manager_);
+  // page_id_t page_id = root_page_id_;
+  // Page *page = buffer_pool_manager_->FetchPage(page_id);
+  // BPlusTreePage *node = reinterpret_cast<BPlusTreePage *>(page->GetData());
+  // while(!node->IsLeafPage()) {
+  //   InternalPage *internal_node = reinterpret_cast<InternalPage *>(node);
+  //   page_id = internal_node->ValueAt(internal_node->GetSize() - 1);
+  //   buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
+  //   node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(page_id)->GetData());
+  // }
+  // return IndexIterator(page_id, buffer_pool_manager_);
+  return IndexIterator();
 }
 
 /*****************************************************************************
