@@ -26,20 +26,79 @@ public:
     * TODO: Student Implement
     */
     void Init(CheckPoint &last_checkpoint) {
-        persist_lsn_ = last_checkpoint.checkpoint_lsn_;
-        active_txns_ = last_checkpoint.active_txns_;
-        data_ = last_checkpoint.persist_data_;
+        active_txns_=std::move(last_checkpoint.active_txns_);
+        persist_lsn_=last_checkpoint.checkpoint_lsn_;
+        data_=std::move(last_checkpoint.persist_data_);
     }
 
     /**
     * TODO: Student Implement
     */
-    void RedoPhase() {}
+    void RedoPhase() {
+        //find the last checkpoint
+        auto log = log_recs_.begin();
+        for(;log!=log_recs_.end() && log->first<persist_lsn_;log++){}
+        for(;log!=log_recs_.end();log++){
+            auto &log_rec = *(log->second);
+            active_txns_[log_rec.txn_id_] = log_rec.lsn_;
+            switch (log_rec.type_) {
+                case LogRecType::kInvalid:
+                    break;
+                case LogRecType::kInsert:
+                    data_[log_rec.target_key_] = log_rec.target_val_;
+                    break;
+                case LogRecType::kDelete:
+                    data_.erase(log_rec.target_key_);
+                    break;
+                case LogRecType::kUpdate:
+                    data_.erase(log_rec.target_key_);
+                    data_[log_rec.new_key_] = log_rec.new_val_;
+                    break;
+                case LogRecType::kBegin:
+                    break;
+                case LogRecType::kCommit:
+                    active_txns_.erase(log_rec.txn_id_);
+                    break;
+                case LogRecType::kAbort:
+                    Rollback(log_rec.txn_id_);
+                    active_txns_.erase(log_rec.txn_id_);
+                    break;
+            }
+        }
+    }
+
+    void Rollback(txn_id_t txn_id) {
+        auto last_log_lsn = active_txns_[txn_id];
+        while (last_log_lsn != INVALID_LSN) {
+        auto log_rec = log_recs_[last_log_lsn];
+        if (log_rec == nullptr) break;
+        switch (log_rec->type_) {
+            case LogRecType::kInsert:                       //delete
+            data_.erase(log_rec->target_key_);
+            break;
+            case LogRecType::kDelete:                       //insert it back
+            data_[log_rec->target_key_] = log_rec->target_val_;
+            break;
+            case LogRecType::kUpdate:                       //delete the updated one and add the old one
+            data_.erase(log_rec->new_key_);
+            data_[log_rec->target_key_] = log_rec->target_val_;
+            break;
+            default:
+            break;
+        }
+            last_log_lsn = log_rec->prev_lsn_;
+        }
+    }
 
     /**
     * TODO: Student Implement
     */
-    void UndoPhase() {}
+    void UndoPhase() {
+        for (const auto &[txn_id, _] : active_txns_) {
+            Rollback(txn_id);
+        }
+        active_txns_.clear();
+    }
 
     // used for test only
     void AppendLogRec(LogRecPtr log_rec) { log_recs_.emplace(log_rec->lsn_, log_rec); }

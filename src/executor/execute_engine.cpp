@@ -33,15 +33,15 @@ ExecuteEngine::ExecuteEngine() {
   /** When you have completed all the code for
    *  the test, run it using main.cpp and uncomment
    *  this part of the code.**/
-  struct dirent *stdir;
-  while((stdir = readdir(dir)) != nullptr) {
-    if( strcmp( stdir->d_name , "." ) == 0 ||
-        strcmp( stdir->d_name , "..") == 0 ||
-        stdir->d_name[0] == '.')
-      continue;
-    dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
-  }
-  closedir(dir);
+  // struct dirent *stdir;
+  // while((stdir = readdir(dir)) != nullptr) {
+  //   if( strcmp( stdir->d_name , "." ) == 0 ||
+  //       strcmp( stdir->d_name , "..") == 0 ||
+  //       stdir->d_name[0] == '.')
+  //     continue;
+  //   dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
+  // }
+  // closedir(dir);
 }
 
 std::unique_ptr<AbstractExecutor> ExecuteEngine::CreateExecutor(ExecuteContext *exec_ctx,
