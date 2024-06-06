@@ -181,7 +181,6 @@ int LeafPage::RemoveAndDeleteRecord(const GenericKey *key, const KeyManager &KM)
       PairCopy(pairs_off + i * pair_size, pairs_off + (i + 1) * pair_size);
     }
     IncreaseSize(-1);
-    return size - 1;
   }
   return GetSize();
 }

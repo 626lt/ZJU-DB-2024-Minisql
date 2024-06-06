@@ -72,6 +72,7 @@ CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManag
   if(init)
   {
     catalog_meta_ = CatalogMeta::NewInstance();
+    FlushCatalogMetaPage();
     next_index_id_=0;
     next_table_id_=0;
   }
@@ -80,6 +81,9 @@ CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManag
     Page *catalog_meta_page = buffer_pool_manager->FetchPage(CATALOG_META_PAGE_ID);
     char* buf=catalog_meta_page->GetData();
     catalog_meta_=CatalogMeta::DeserializeFrom(buf);
+    buffer_pool_manager_->UnpinPage(catalog_meta_page->GetPageId(), false);
+    next_index_id_ = catalog_meta_->GetNextIndexId();
+    next_table_id_ = catalog_meta_->GetNextTableId();
     for (auto tableID_pageID : catalog_meta_->table_meta_pages_) {
       table_id_t table_id = tableID_pageID.first;
       page_id_t page_id = tableID_pageID.second;
@@ -96,7 +100,6 @@ CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManag
       }
       LoadIndex(index_id, page_id);
     }
-     buffer_pool_manager->UnpinPage(CATALOG_META_PAGE_ID, true);
    }
   
 }
@@ -123,23 +126,27 @@ dberr_t CatalogManager::CreateTable(const string &table_name, TableSchema *schem
   }
   page_id_t page_id;
   table_id_t table_id = catalog_meta_->GetNextTableId();
+  page_id_t table_heap_root_id;
+  TablePage* table_heap_root_page = reinterpret_cast<TablePage*>(buffer_pool_manager_->NewPage(table_heap_root_id));
+  table_heap_root_page->Init(table_heap_root_id, INVALID_PAGE_ID, log_manager_, txn);
   auto page=buffer_pool_manager_->NewPage(page_id);
   catalog_meta_->table_meta_pages_.emplace(table_id,page_id);
   Schema *tmp_schema = Schema::DeepCopySchema(schema);
-  TableHeap *table = TableHeap::Create(buffer_pool_manager_,tmp_schema,txn,log_manager_,lock_manager_);
+  TableHeap *table = TableHeap::Create(buffer_pool_manager_,table_heap_root_id,tmp_schema,log_manager_,lock_manager_);
   if(page==nullptr)
   {
     return DB_FAILED;
   }
-  auto table_meta=TableMetadata::Create(table_id,table_name,page_id,tmp_schema);
+  auto table_meta=TableMetadata::Create(table_id,table_name,table_heap_root_id,tmp_schema);
   table_meta->SerializeTo(page->GetData());
   TableInfo* t_info = TableInfo::Create();
   t_info->Init(table_meta,table);
   table_names_.emplace(table_name,table_id);
   tables_.emplace(table_id,t_info);
-  FlushCatalogMetaPage();
   table_info=t_info;
   buffer_pool_manager_->UnpinPage(page_id, true);
+  buffer_pool_manager_->UnpinPage(table_heap_root_id, true);
+  FlushCatalogMetaPage();
   return DB_SUCCESS;
 }
 
@@ -193,6 +200,7 @@ dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string 
     return DB_INDEX_ALREADY_EXIST;
   }
   auto table_id=table_info->GetTableId();
+  next_index_id_++;
   std::vector<uint32_t> key_map;
   for (auto key : index_keys) {
     index_id_t id;
@@ -218,9 +226,9 @@ dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string 
     index_names_.find(table_name)->second.emplace(index_name,index_id);
   }
   indexes_.emplace(index_id,i_info);
-  FlushCatalogMetaPage();
-  index_info=i_info;
   buffer_pool_manager_->UnpinPage(page_id, true);
+  index_info=i_info;
+  FlushCatalogMetaPage();
   return DB_SUCCESS;
 }
 
@@ -280,6 +288,7 @@ dberr_t CatalogManager::DropTable(const string &table_name) {
   tables_.erase(table_id);
   buffer_pool_manager_->DeletePage(page_id);
   catalog_meta_->table_meta_pages_.erase(table_id);
+  FlushCatalogMetaPage();
   delete table_info;
   return DB_SUCCESS;
 }
@@ -298,9 +307,7 @@ dberr_t CatalogManager::DropIndex(const string &table_name, const string &index_
   index_names_.at(table_name).erase(index_name);
   indexes_.erase(index_id);
   catalog_meta_->DeleteIndexMetaPage(buffer_pool_manager_, index_id);
-  // auto *index_roots = reinterpret_cast<IndexRootsPage *>(buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID)->GetData());
-  // index_roots->Delete(index_id);
-  // buffer_pool_manager_->UnpinPage(INDEX_ROOTS_PAGE_ID, true);
+  FlushCatalogMetaPage();
   delete index_info;
   return DB_SUCCESS;
 }
@@ -329,14 +336,14 @@ dberr_t CatalogManager::LoadTable(const table_id_t table_id, const page_id_t pag
   catalog_meta_->table_meta_pages_[table_id] = page_id;
   Page* page=buffer_pool_manager_->FetchPage(page_id);
   TableMetadata* table_meta = nullptr;
-  char *buf = page->GetData();
-  TableMetadata::DeserializeFrom(buf,table_meta);
-  TableHeap* heap=TableHeap::Create(buffer_pool_manager_,table_meta->GetFirstPageId(),table_meta->GetSchema(),log_manager_,lock_manager_);
+  TableMetadata::DeserializeFrom(page->GetData(),table_meta);
+  auto schema=Schema::DeepCopySchema(table_meta->GetSchema());
+  TableHeap* heap=TableHeap::Create(buffer_pool_manager_,table_meta->GetFirstPageId(),schema,log_manager_,lock_manager_);
   table_info = TableInfo::Create();
   table_info->Init(table_meta,heap);
   table_names_.emplace(table_meta->GetTableName(),table_id);
   tables_.emplace(table_id,table_info);
-  buffer_pool_manager_->UnpinPage(page_id, false);
+  //buffer_pool_manager_->UnpinPage(page_id, false);
   return DB_SUCCESS;
 }
 
@@ -357,8 +364,9 @@ dberr_t CatalogManager::LoadIndex(const index_id_t index_id, const page_id_t pag
   TableInfo* table_info=tables_.find(table_id)->second;
   index_info = IndexInfo::Create();
   index_info->Init(index_meta,table_info,buffer_pool_manager_);
-  //auto *idx_roots = reinterpret_cast<IndexRootsPage *>(buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID));
-  //page_id_t index_root_page_id = INVALID_PAGE_ID;
+  // auto *idx_roots = reinterpret_cast<IndexRootsPage *>(buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID));
+  // page_id_t index_root_page_id = INVALID_PAGE_ID;
+  // idx_roots->GetRootId(index_id, &index_root_page_id);
   auto table_name=table_info->GetTableName();
   auto index_name=index_info->GetIndexName();
   if(index_names_.find(table_name)==index_names_.end())
@@ -372,7 +380,7 @@ dberr_t CatalogManager::LoadIndex(const index_id_t index_id, const page_id_t pag
     index_names_.find(table_name)->second.emplace(index_name,index_id);
   }
   indexes_.emplace(index_id,index_info);
-  buffer_pool_manager_->UnpinPage(page_id, false);
+  //buffer_pool_manager_->UnpinPage(page_id, false);
   //buffer_pool_manager_->UnpinPage(INDEX_ROOTS_PAGE_ID, true);
   return DB_SUCCESS;
 }

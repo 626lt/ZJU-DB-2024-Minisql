@@ -139,6 +139,9 @@ bool BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty) {
     return true;
   }
   frame_id_t frame_id = page_table_[page_id];
+  // if(pages_[frame_id].pin_count_ == 0){
+  //   LOG(ERROR) << "problem in page unpin, it has beem unpinned!" << endl;
+  // }
   if(pages_[frame_id].pin_count_ > 0){
     pages_[frame_id].pin_count_ --;
   }
