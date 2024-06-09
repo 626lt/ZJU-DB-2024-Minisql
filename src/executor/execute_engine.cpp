@@ -33,15 +33,15 @@ ExecuteEngine::ExecuteEngine() {
   /** When you have completed all the code for
    *  the test, run it using main.cpp and uncomment
    *  this part of the code.**/
-  // struct dirent *stdir;
-  // while((stdir = readdir(dir)) != nullptr) {
-  //   if( strcmp( stdir->d_name , "." ) == 0 ||
-  //       strcmp( stdir->d_name , "..") == 0 ||
-  //       stdir->d_name[0] == '.')
-  //     continue;
-  //   dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
-  // }
-  // closedir(dir);
+  struct dirent *stdir;
+  while((stdir = readdir(dir)) != nullptr) {
+    if( strcmp( stdir->d_name , "." ) == 0 ||
+        strcmp( stdir->d_name , "..") == 0 ||
+        stdir->d_name[0] == '.')
+      continue;
+    dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
+  }
+  closedir(dir);
 }
 
 std::unique_ptr<AbstractExecutor> ExecuteEngine::CreateExecutor(ExecuteContext *exec_ctx,
@@ -261,9 +261,12 @@ dberr_t ExecuteEngine::ExecuteDropDatabase(pSyntaxNode ast, ExecuteContext *cont
   if (dbs_.find(db_name) == dbs_.end()) {
     return DB_NOT_EXIST;
   }
-  remove(db_name.c_str());
+  remove(("./databases/" + db_name).c_str());
   delete dbs_[db_name];
   dbs_.erase(db_name);
+  if(db_name == current_db_){
+    current_db_ = "";
+  }
   return DB_SUCCESS;
 }
 
