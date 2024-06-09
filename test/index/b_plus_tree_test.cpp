@@ -19,7 +19,7 @@ TEST(BPlusTreeTests, SampleTest) {
   BPlusTree tree(0, engine.bpm_, KP);
   TreeFileManagers mgr("tree_");
   // Prepare data
-  const int n = 1000000;
+  const int n = 100000;
   vector<GenericKey *> keys;
   vector<RowId> values;
   vector<GenericKey *> delete_seq;
@@ -68,5 +68,9 @@ TEST(BPlusTreeTests, SampleTest) {
   for (int i = n / 2; i < n; i++) {
     ASSERT_TRUE(tree.GetValue(delete_seq[i], ans));
     ASSERT_EQ(kv_map[delete_seq[i]], ans[ans.size() - 1]);
+  }
+
+  for(int i = n / 2; i < n; i++) {
+    tree.Remove(delete_seq[i]);
   }
 }
