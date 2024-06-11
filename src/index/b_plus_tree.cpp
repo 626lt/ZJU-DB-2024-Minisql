@@ -19,7 +19,7 @@ BPlusTree::BPlusTree(index_id_t index_id, BufferPoolManager *buffer_pool_manager
       internal_max_size_(internal_max_size) {
     root_page_id_ = INVALID_PAGE_ID;
     Page *page = buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID);
-    IndexRootsPage *index_roots_page = reinterpret_cast<IndexRootsPage *>(page->GetData());
+     IndexRootsPage *index_roots_page = reinterpret_cast<IndexRootsPage *>(page->GetData());
     if (!index_roots_page->GetRootId(index_id, &root_page_id_)) {
       root_page_id_ = INVALID_PAGE_ID;
       UpdateRootPageId(1);
