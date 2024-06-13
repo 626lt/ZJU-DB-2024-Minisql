@@ -31,8 +31,8 @@ BPlusTree::BPlusTree(index_id_t index_id, BufferPoolManager *buffer_pool_manager
 
 void BPlusTree::Destroy(page_id_t current_page_id) {
  if(current_page_id == INVALID_PAGE_ID) {
-    Destroy(root_page_id_);
-  }else{
+    current_page_id = root_page_id_;
+  }
     Page* page = buffer_pool_manager_->FetchPage(current_page_id);
     BPlusTreePage* node = reinterpret_cast<BPlusTreePage*>(page->GetData());
     if(node->IsLeafPage()) {
@@ -45,7 +45,12 @@ void BPlusTree::Destroy(page_id_t current_page_id) {
       }
       buffer_pool_manager_->DeletePage(current_page_id);
       buffer_pool_manager_->UnpinPage(current_page_id, true);
-    }
+  }
+  if(current_page_id == root_page_id_) {
+    auto head = buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID);
+    IndexRootsPage* index_roots_page = reinterpret_cast<IndexRootsPage*>(head->GetData());
+    index_roots_page->Delete(index_id_);
+    buffer_pool_manager_->UnpinPage(INDEX_ROOTS_PAGE_ID, true);
   }
 }
 

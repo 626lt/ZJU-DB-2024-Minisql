@@ -74,7 +74,7 @@ uint32_t Column::GetSerializedSize() const {
  */
 uint32_t Column::DeserializeFrom(char *buf, Column *&column) {
   if (column != nullptr) {
-    LOG(WARNING) << "Pointer to column is not null in column deserialize." 									 << std::endl;
+    LOG(WARNING) << "Pointer to column is not null in column deserialize." << std::endl;
   }
   uint32_t offset = 0;
   uint32_t magic_num;

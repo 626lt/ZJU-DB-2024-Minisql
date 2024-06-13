@@ -6,7 +6,6 @@
 uint32_t Row::SerializeTo(char *buf, Schema *schema) const {
   ASSERT(schema != nullptr, "Invalid schema before serialize.");
   ASSERT(schema->GetColumnCount() == fields_.size(), "Fields size do not match schema's column size.");
-  // replace with your code here
   uint32_t offset = 0;
   // write Field Nums
   uint32_t fields_num = GetFieldCount();
@@ -59,12 +58,6 @@ uint32_t Row::DeserializeFrom(char *buf, Schema *schema) {
       offset += Field::DeserializeFrom(buf + offset, type, &field, false);
     }
     fields_.push_back(field);
-    // the following code is wrong, it will cause segment fault
-    // if (null_bitmap[i / 8] & (1 << (i % 8))) {
-    //   offset += Field::DeserializeFrom(buf + offset, schema->GetColumn(i)->GetType(), &fields_[i], true);
-    // } else {
-    //   offset += Field::DeserializeFrom(buf + offset, schema->GetColumn(i)->GetType(), &fields_[i], false);
-    // }
   }
   return offset;
 }

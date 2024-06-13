@@ -51,8 +51,7 @@ void DiskManager::WritePage(page_id_t logical_page_id, const char *page_data) {
  * TODO: Student Implement
  */
 page_id_t DiskManager::AllocatePage() {
-  // ASSERT(false, "Not implemented yet.");
-  // return INVALID_PAGE_ID;
+  // read meta page
   DiskFileMetaPage* meta_page = reinterpret_cast<DiskFileMetaPage*>(meta_data_);
   if(meta_page->num_allocated_pages_ == MAX_VALID_PAGE_ID){
     return INVALID_PAGE_ID;
@@ -88,7 +87,6 @@ page_id_t DiskManager::AllocatePage() {
  * TODO: Student Implement
  */
 void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
-  //ASSERT(false, "Not implemented yet.");
   uint32_t extent_id = logical_page_id / BITMAP_SIZE;
   page_id_t bitmap_page_id = 1 + extent_id * (BITMAP_SIZE + 1);
 
@@ -112,11 +110,11 @@ void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
  * 访问对应的bitmappage，然后调用bitmap的函数
  */
 bool DiskManager::IsPageFree(page_id_t logical_page_id) {
-  //return false;
   BitmapPage<PAGE_SIZE>* bitmap_page = new BitmapPage<PAGE_SIZE>();
   uint32_t extent_id = logical_page_id / BITMAP_SIZE;
   uint32_t page_offset = logical_page_id % BITMAP_SIZE;
   page_id_t bitmap_page_id = 1 + extent_id * (BITMAP_SIZE + 1);
+  // if the extent_id is larger than the number of extents, then the page is free
   if (extent_id >= reinterpret_cast<DiskFileMetaPage*>(meta_data_)->num_extents_)
   {
     return true;
