@@ -19,7 +19,7 @@ BPlusTree::BPlusTree(index_id_t index_id, BufferPoolManager *buffer_pool_manager
       internal_max_size_(internal_max_size) {
     root_page_id_ = INVALID_PAGE_ID;
     Page *page = buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID);
-     IndexRootsPage *index_roots_page = reinterpret_cast<IndexRootsPage *>(page->GetData());
+    IndexRootsPage *index_roots_page = reinterpret_cast<IndexRootsPage *>(page->GetData());
     if (!index_roots_page->GetRootId(index_id, &root_page_id_)) {
       root_page_id_ = INVALID_PAGE_ID;
       UpdateRootPageId(1);
@@ -73,15 +73,16 @@ bool BPlusTree::GetValue(const GenericKey *key, std::vector<RowId> &result, Txn 
   if(IsEmpty()) {
     return false;
   }
-  Page *root_page_ = buffer_pool_manager_->FetchPage(root_page_id_);
-  BPlusTreePage *node = reinterpret_cast<BPlusTreePage *>(root_page_->GetData());
-  while(!node->IsLeafPage()) {
-    InternalPage *internal_node = reinterpret_cast<InternalPage *>(node);
-    page_id_t child_page_id = internal_node->Lookup(key, processor_);
-    buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
-    node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(child_page_id)->GetData());
-  }
-  LeafPage *leaf_node = reinterpret_cast<LeafPage *>(node);
+  // Page *root_page_ = buffer_pool_manager_->FetchPage(root_page_id_);
+  // BPlusTreePage *node = reinterpret_cast<BPlusTreePage *>(root_page_->GetData());
+  // while(!node->IsLeafPage()) {
+  //   InternalPage *internal_node = reinterpret_cast<InternalPage *>(node);
+  //   page_id_t child_page_id = internal_node->Lookup(key, processor_);
+  //   buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
+  //   node = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(child_page_id)->GetData());
+  // }
+  // LeafPage *leaf_node = reinterpret_cast<LeafPage *>(node);
+  LeafPage *leaf_node = reinterpret_cast<LeafPage *>(FindLeafPage(key, root_page_id_, false)->GetData());
   RowId value;
   bool find = leaf_node->Lookup(key, value, processor_);
   if(find) {
